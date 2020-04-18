@@ -3,6 +3,7 @@ import { Switch, Route, Redirect } from "react-router-dom";
 import {
   Stitch,
   UserPasswordAuthProviderClient,
+  UserPasswordCredential,
 } from "mongodb-stitch-browser-sdk";
 
 import Header from "./components/Header/Header";
@@ -38,10 +39,24 @@ class App extends Component {
     const emailPassClient = this.client.auth.getProviderClient(
       UserPasswordAuthProviderClient.factory,
     );
-    emailPassClient
-      .registerWithEmail(authData.email, authData.password)
-      .then(() => {
-        console.log("you should have received a mail");
+    let request;
+    if (this.state.authMode === "login") {
+      const credential = new UserPasswordCredential(
+        authData.email,
+        authData.password,
+      );
+      request = this.client.auth.loginWithCredential(credential);
+    } else {
+      request = emailPassClient.registerWithEmail(
+        authData.email,
+        authData.password,
+      );
+    }
+    request
+      .then((result) => {
+        if (result) {
+          this.setState({ isAuth: true });
+        }
       })
       .catch((err) => {
         this.errorHandler("An error occurred");
