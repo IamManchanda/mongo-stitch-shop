@@ -22,6 +22,7 @@ class ProductPage extends Component {
         this.setState({ isLoading: false, product });
       })
       .catch((err) => {
+        this.setState({ isLoading: false });
         this.props.onError(
           "Loading the product failed. Please try again later",
         );
