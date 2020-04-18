@@ -1,7 +1,8 @@
-import React, { Component } from 'react';
-import axios from 'axios';
+import React, { Component } from "react";
+import { Stitch, RemoteMongoClient } from "mongodb-stitch-browser-sdk";
+import axios from "axios";
 
-import Products from '../../components/Products/Products';
+import Products from "../../components/Products/Products";
 
 class ProductsPage extends Component {
   state = { isLoading: true, products: [] };
@@ -9,30 +10,44 @@ class ProductsPage extends Component {
     this.fetchData();
   }
 
-  productDeleteHandler = productId => {
+  productDeleteHandler = (productId) => {
     axios
-      .delete('http://localhost:3100/products/' + productId)
-      .then(result => {
+      .delete("http://localhost:3100/products/" + productId)
+      .then((result) => {
         console.log(result);
         this.fetchData();
       })
-      .catch(err => {
+      .catch((err) => {
         this.props.onError(
-          'Deleting the product failed. Please try again later'
+          "Deleting the product failed. Please try again later",
         );
         console.log(err);
       });
   };
 
   fetchData = () => {
-    axios
-      .get('http://localhost:3100/products')
-      .then(productsResponse => {
-        this.setState({ isLoading: false, products: productsResponse.data });
+    const mongodb = Stitch.defaultAppClient.getServiceClient(
+      RemoteMongoClient.factory,
+      "mongodb-atlas",
+    );
+    mongodb
+      .db("shop")
+      .collection("products")
+      .find()
+      .asArray()
+      .then((products) => {
+        const transformedProducts = products.map((product) => {
+          product._id = product._id.toString();
+          product.price = product.price.toString();
+          return product;
+        });
+        this.setState({ isLoading: false, products: transformedProducts });
       })
-      .catch(err => {
-        this.setState({ isLoading: false, products: [] });
-        this.props.onError('Loading products failed. Please try again later');
+      .catch((err) => {
+        this.setState({ isLoading: false });
+        this.props.onError(
+          "Fetching the product failed. Please try again later",
+        );
         console.log(err);
       });
   };
